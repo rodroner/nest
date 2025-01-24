@@ -1,20 +1,39 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Request, Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { CreateAuthDto } from './dto/create-user.dto';
-import { UpdateAuthDto } from './dto/update-user.dto';
+
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { LoginDto } from './dto/login.dto';
+import { RegisterUserDto } from './dto';
+import { AuthGuard } from './guards/auth.guard';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post()
-  create(@Body() createAuthDto: CreateAuthDto) {
-    return this.authService.create(createAuthDto);
+  create(@Body() createUserDto: CreateUserDto) {
+    return this.authService.create(createUserDto);
   }
 
-  @Get()
-  findAll() {
-    return this.authService.findAll();
+  @Post('/login')
+  login(@Body() loginDto: LoginDto) {
+    return this.authService.login(loginDto);
+  }
+
+  @Post('/register')
+  register(@Body() registerUserDto: RegisterUserDto) {
+    return this.authService.register(registerUserDto);
+  }
+
+  @UseGuards(AuthGuard)
+  @Get('check-token')
+  findAll( @Request() req: Request) {
+    const user = req['user'];
+    return {
+      user,
+      token: this.authService.getJwtToken({id: user._id})
+    };
   }
 
   @Get(':id')
@@ -23,8 +42,8 @@ export class AuthController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAuthDto: UpdateAuthDto) {
-    return this.authService.update(+id, updateAuthDto);
+  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+    return this.authService.update(+id, updateUserDto);
   }
 
   @Delete(':id')
