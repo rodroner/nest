@@ -7,7 +7,6 @@ import { ConfigModule } from '@nestjs/config';
 
 import { AuthModule } from '../app/auth/auth.module';
 
-
 @Module({
   imports: [
     ConfigModule.forRoot(),
@@ -19,5 +18,7 @@ import { AuthModule } from '../app/auth/auth.module';
 })
 export class AppModule {
   constructor(){
+    console.log('process.env.MONGO_URI!!!!!!!!!!!!!!!!!!!!!!!!!')
+    console.log(process.env.MONGO_URI)
   }
 }
