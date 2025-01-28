@@ -7,12 +7,17 @@ import { AuthController } from './auth.controller';
 
 import { User, UserSchema } from './entities/user.entity';
 import { JwtModule } from '@nestjs/jwt';
+import { UsersController } from '../users/controllers/users.controller';
 
 @Module({
   controllers: [
-    AuthController
+    AuthController,
+    //UsersController
   ],
   providers: [
+    AuthService
+  ],
+  exports: [
     AuthService
   ],
   imports: [

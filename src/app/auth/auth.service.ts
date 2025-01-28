@@ -7,7 +7,6 @@ import * as bcryptjs from 'bcryptjs';
 
 import { LoginDto, RegisterUserDto, CreateUserDto, UpdateUserDto } from './dto';
 
-
 import { User } from './entities/user.entity';
 
 import { JwtPayload } from './interfaces/jwt-payload';
@@ -17,16 +16,18 @@ import { LoginResponse } from './interfaces/login-response';
 export class AuthService {
 
   constructor(
-    @InjectModel(User.name) 
-    private userModel: Model<User>,
+    @InjectModel(User.name) private readonly userModel: Model<User>,
     private jwtService: JwtService,
-  ) 
-  {}
+  ) { }
 
+  async findOneByEmail(email: string): Promise<User | null> {
+    return this.userModel.findOne({ email }).exec();
+  }
+  
   async create(createUserDto: CreateUserDto): Promise<User> {
 
     try {
-      const {password, ...userData} = createUserDto;
+      const { password, ...userData } = createUserDto;
       const newUser = new this.userModel({
         password: bcryptjs.hashSync(password, 10),
         ...userData
@@ -34,7 +35,7 @@ export class AuthService {
 
       await newUser.save();
       //Mandar el User sin ver la password
-      const {password:_, ...user} = newUser.toJSON();
+      const { password: _, ...user } = newUser.toJSON();
 
       return user;
 
@@ -42,12 +43,12 @@ export class AuthService {
       if (error instanceof Error && 'code' in error) {
         const mongoError = error as { code: number };
         console.log(mongoError.code);
-    
+
         if (mongoError.code === 11000) {
           throw new BadRequestException(`${createUserDto.email} ya existe!`);
         }
       }
-    
+
       throw new InternalServerErrorException('Algo terrible sucedió!');
     }
   }
@@ -56,32 +57,32 @@ export class AuthService {
 
     const user = await this.create(registerUserDto);
 
-    return{
+    return {
       user: user,
-      token: this.getJwtToken({id: user._id.toString()})
-    } 
+      token: this.getJwtToken({ id: user._id.toString() })
+    }
   }
 
-  async login(loginDto: LoginDto):Promise <LoginResponse> {
+  async login(loginDto: LoginDto): Promise<LoginResponse> {
     //Regresa usurario y el token de acceso
-    console.log({loginDto})
-    const {email, password} = loginDto;
-    const user = await this.userModel.findOne({email});
-    if(!user){
+    console.log({ loginDto })
+    const { email, password } = loginDto;
+    const user = await this.userModel.findOne({ email });
+    if (!user) {
       throw new UnauthorizedException('Credenciales inválidas - email')
     }
-    if(!bcryptjs.compareSync(password, user.password)){
+    if (!bcryptjs.compareSync(password, user.password)) {
       throw new UnauthorizedException('Credenciales inválidas - contraseña')
     }
 
     user.isConnected = true;
     await user.save();
 
-    const {password:_, ...rest} = user.toJSON();
+    const { password: _, ...rest } = user.toJSON();
 
     return {
       user: rest,
-      token: this.getJwtToken({id: user.id}),
+      token: this.getJwtToken({ id: user.id }),
     }
   }
 
@@ -99,13 +100,13 @@ export class AuthService {
   }
 
   async findAllEmails(): Promise<string[]> {
-    const users = await this.userModel.find().select('email');  
-    return users.map(user => user.email);  
+    const users = await this.userModel.find().select('email');
+    return users.map(user => user.email);
   }
 
-  async findUserById(id: string){
+  async findUserById(id: string) {
     const user = await this.userModel.findById(id);
-    const { password, ...rest} = user.toJSON();
+    const { password, ...rest } = user.toJSON();
     return rest;
   }
 
@@ -121,7 +122,7 @@ export class AuthService {
     return `This action removes a #${id} auth`;
   }
 
-  getJwtToken(payload: JwtPayload){
+  getJwtToken(payload: JwtPayload) {
     const token = this.jwtService.sign(payload);
     return token;
   }
