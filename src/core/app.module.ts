@@ -9,6 +9,7 @@ import { AuthModule } from '../app/auth/auth.module';
 import { UsersController } from 'src/app/users/controllers/users.controller';
 import { AuthService } from 'src/app/auth/auth.service';
 import { AuthController } from 'src/app/auth/auth.controller';
+import { ChatModule } from 'src/chat/chat.module';
 
 
 @Module({
@@ -16,6 +17,7 @@ import { AuthController } from 'src/app/auth/auth.controller';
     ConfigModule.forRoot(),
     MongooseModule.forRoot(process.env.MONGO_URI),
     AuthModule,    
+    ChatModule
   ],
   controllers: [
     AuthController,
