@@ -4,7 +4,7 @@ import { Server, Socket } from 'socket.io';
 
 import { ChatService } from './chat.service';
 
-@WebSocketGateway({ cors: { origin: '*' } })
+@WebSocketGateway({ namespace: 'chat', cors: { origin: '*' } })
 export class ChatGateway implements OnModuleInit {
 
   @WebSocketServer()
@@ -16,8 +16,11 @@ export class ChatGateway implements OnModuleInit {
     this.server.on('connection', (socket: Socket) => {
 
       const { name, token } = socket.handshake.auth;
+      console.log('CONECTTION CHAT.GATEWAY.TS -> ' + name);
+
       if (!name) {
         socket.disconnect();
+        console.log('DISCONECTTION CHAT.GATEWAY.TS -> !name');
         return;
       }
 
@@ -37,6 +40,7 @@ export class ChatGateway implements OnModuleInit {
       socket.on('disconnect', () => {
         this.chatService.onClientDisconnected(socket.id);
         this.server.emit('on-clients-changed', this.chatService.getClients());
+        console.log('DISCONECTTION CHAT.GATEWAY.TS -> ' + name);
         // console.log('Cliente desconectado: ', socket.id);
       })
     });

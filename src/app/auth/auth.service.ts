@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { Model } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { JwtService } from '@nestjs/jwt';
@@ -11,6 +11,7 @@ import { User } from './entities/user.entity';
 
 import { JwtPayload } from './interfaces/jwt-payload';
 import { LoginResponse } from './interfaces/login-response';
+import { UsersGateway } from 'src/websocket-users/users.gateway';
 
 @Injectable()
 export class AuthService {
@@ -18,12 +19,13 @@ export class AuthService {
   constructor(
     @InjectModel(User.name) private readonly userModel: Model<User>,
     private jwtService: JwtService,
+    private readonly usersGateway: UsersGateway
   ) { }
 
   async findOneByEmail(email: string): Promise<User | null> {
     return this.userModel.findOne({ email }).exec();
   }
-  
+
   async create(createUserDto: CreateUserDto): Promise<User> {
 
     try {
@@ -65,7 +67,9 @@ export class AuthService {
 
   async login(loginDto: LoginDto): Promise<LoginResponse> {
     //Regresa usurario y el token de acceso
-    console.log({ loginDto })
+    console.log('Inicio de sesión:');
+    console.log({ loginDto });
+
     const { email, password } = loginDto;
     const user = await this.userModel.findOne({ email });
     if (!user) {
@@ -78,6 +82,9 @@ export class AuthService {
     user.isConnected = true;
     await user.save();
 
+    //Actualizar lista 'UsersGateway'
+    this.usersGateway.emitUsersUpdate();
+
     const { password: _, ...rest } = user.toJSON();
 
     return {
@@ -89,10 +96,15 @@ export class AuthService {
   async disconnect(email: string): Promise<User | null> {
     const user = await this.userModel.findOne({ email });
     if (!user) {
-      throw new Error('Usuario no encontrado');
+      throw new NotFoundException('Usuario no encontrado');
     }
     user.isConnected = false;
-    return await user.save();
+    await user.save();
+    console.log(user.email + ' se ha DESCONECTADO');
+    //Actualizar lista 'UsersGateway'
+    this.usersGateway.emitUsersUpdate();
+    
+    return user;
   }
 
   findAll(): Promise<User[]> {

@@ -6,6 +6,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterUserDto } from './dto';
 import { AuthGuard } from './guards/auth.guard';
+import { User } from './entities/user.entity';
 
 @Controller('auth')
 export class AuthController {
@@ -34,6 +35,11 @@ export class AuthController {
       user,
       token: this.authService.getJwtToken({ id: user._id })
     };
+  }
+
+  @Post('disconnect')
+  async disconnect(@Body('email') email: string): Promise<User | null> {
+    return this.authService.disconnect(email);
   }
 
   @Get(':id')

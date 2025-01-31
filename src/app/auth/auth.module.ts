@@ -8,6 +8,7 @@ import { AuthController } from './auth.controller';
 import { User, UserSchema } from './entities/user.entity';
 import { JwtModule } from '@nestjs/jwt';
 import { UsersController } from '../users/controllers/users.controller';
+import { UsersModule } from 'src/websocket-users/users.module';
 
 @Module({
   controllers: [
@@ -21,6 +22,7 @@ import { UsersController } from '../users/controllers/users.controller';
     AuthService
   ],
   imports: [
+    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
     ConfigModule.forRoot(),
 
     MongooseModule.forFeature([
@@ -34,7 +36,8 @@ import { UsersController } from '../users/controllers/users.controller';
       global: true,
       secret: process.env.JWT_SEED,
       signOptions: { expiresIn: '6h' },
-    })
+    }),
+    UsersModule
 
   ]
 })
