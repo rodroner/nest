@@ -30,12 +30,6 @@ export class ChatGateway implements OnModuleInit {
       // listado actualizado de clientes conectados
       this.server.emit('on-clients-changed', this.chatService.getClients());
 
-      // Mensaje de bienvenida
-      // socket.emit('welcome-message', 'Bienvenido al servidor');
-
-      // Listado de clientes conectados
-      this.server.emit('on-clients-changed', this.chatService.getClients());
-
       // Manejar desconexión
       socket.on('disconnect', () => {
         this.chatService.onClientDisconnected(socket.id);

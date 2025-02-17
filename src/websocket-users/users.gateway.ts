@@ -14,13 +14,13 @@ export class UsersGateway implements OnModuleInit {
 
   onModuleInit() {
     this.server.on('connection', async (socket: Socket) => {
-      console.log('Nuevo cliente conectado:', socket.id);
+      //console.log('Nuevo cliente conectado:', socket.id);
 
       //Emitir la lista de usuarios al conectar un cliente
       this.emitUsersUpdate();
 
       socket.on('disconnect', async () => {
-        console.log('Cliente desconectado:', socket.id);
+        //console.log('Cliente desconectado:', socket.id);
       });
     });
   }
