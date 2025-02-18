@@ -2,6 +2,8 @@ import { WebSocketGateway, WebSocketServer, SubscribeMessage, MessageBody, Conne
 import { Server, Socket } from 'socket.io';
 import { Injectable } from '@nestjs/common';
 
+import { MessageService } from './services/message.service';
+
 interface Client {
   id: string;
   email1: string;
@@ -26,6 +28,8 @@ export class ChatPrivateGateway {
 
   private clients: Map<string, Client> = new Map();
 
+  constructor(private readonly messageService: MessageService) { }
+
   // Registrar cliente cuando se conecta
   @SubscribeMessage('connect-client')
   onClientConnect(@MessageBody() data: { email1: string; email2?: string }, @ConnectedSocket() socket: Socket) {
@@ -33,7 +37,7 @@ export class ChatPrivateGateway {
     const client: Client = { id: socket.id, email1, email2: email2 || '' };
 
     // Guardamos la conexión del usuario
-    this.clients.set(email1, client); 
+    this.clients.set(email1, client);
 
     console.log(`Cliente conectado: ${socket.id} : ${email1} <-> ${email2}`);
     console.log('Clientes actuales:')
@@ -42,15 +46,18 @@ export class ChatPrivateGateway {
 
   // Enviar mensaje
   @SubscribeMessage('send-message')
-  onSendMessage(@MessageBody() data: { email1: string; email2: string; message: string }, @ConnectedSocket() socket: Socket) {
+  async onSendMessage(@MessageBody() data: { email1: string; email2: string; message: string }, @ConnectedSocket() socket: Socket) {
     const { email1, email2, message } = data;
+
+    // Guardar el mensaje en la base de datos
+    await this.messageService.createMessage(email1, email2, message);
 
     // Buscamos el socket correspondiente para email1 y email2
     const cliente1 = this.clients.get(email1);
     const cliente2 = this.clients.get(email2);
 
-    console.log('🔹Mensaje en el cliente1: ' + cliente1.id + ', '+ cliente1.email1 +', '+ cliente1.email2);
-    console.log('🔹Mensaje en el cliente2: ' + cliente2.id + ', '+ cliente2.email1 +', '+ cliente2.email2);
+    console.log('🔹Mensaje en el cliente1: ' + cliente1.id + ', ' + cliente1.email1 + ', ' + cliente1.email2);
+    console.log('🔹Mensaje en el cliente2: ' + cliente2.id + ', ' + cliente2.email1 + ', ' + cliente2.email2);
 
     if (cliente1) {
       this.server.to(cliente1.id).emit('receive-message', {
@@ -80,5 +87,14 @@ export class ChatPrivateGateway {
   onClientDisconnect(@MessageBody() email: string) {
     this.clients.delete(email);
     console.log(`Cliente ${email} desconectado`);
+  }
+
+
+  //Usuarios puedan ver los mensajes anteriores cuando se conectan
+  @SubscribeMessage('get-messages')
+  async onGetMessages(@MessageBody() data: { email1: string; email2: string }, @ConnectedSocket() socket: Socket) {
+    const { email1, email2 } = data;
+    const messages = await this.messageService.getMessages(email1, email2);
+    socket.emit('previous-messages', messages);
   }
 }
