@@ -35,6 +35,7 @@ export class AuthService {
         ...userData
       });
 
+      newUser.isConnected = true;
       await newUser.save();
       //Mandar el User sin ver la password
       const { password: _, ...user } = newUser.toJSON();
